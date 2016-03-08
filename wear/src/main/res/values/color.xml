@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#03A9F4</color>
+    <color name="watchFaceColor">#532092</color>
+    <color name="light_grey">#f0edf4</color>
+</resources>
