@@ -85,7 +85,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
             paint = new Paint();
             paint.setAntiAlias(true);
-            paint.setColor(ContextCompat.getColor(getApplicationContext(),R.color.light_grey));
+            paint.setColor(ContextCompat.getColor(getApplicationContext(), R.color.light_grey));
             paint.setStyle(Paint.Style.STROKE);
             paint.setTextSize(30);
 
@@ -171,12 +171,12 @@ public class MyWatchFace extends CanvasWatchFaceService {
             canvas.drawRect(rectFiller, rectFillerPaint);
 
             path.moveTo(0, height / 2);
-            path.lineTo(pointX, pointY+2);
+            path.lineTo(pointX, pointY + 2);
             paint.setStrokeWidth(2);
             canvas.drawPath(path, paint);
 
             path.moveTo(width, height / 2);
-            path.lineTo(pointX1, pointY1+2);
+            path.lineTo(pointX1, pointY1 + 2);
             paint.setStrokeWidth(2);
             canvas.drawPath(path, paint);
 
@@ -203,7 +203,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
 
             canvas.drawPath(path, paint);
-
 
 
             //path1.addOval();
@@ -241,7 +240,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
             String weatherTemp = "23";
             float weatherTempLength = messageTextPaint.measureText(weatherTemp);
 
-            String weatherLabel = "Cloudy";
+            String weatherLabel = "Sunny";
             float weatherLabelWidth = messageLabelTextPaint.measureText(messageLabel);
 
             Log.d(TAG, "drawMessageRect: weather rect width :: " + weatherRectF.width() + "  height::" + weatherRectF.height());
