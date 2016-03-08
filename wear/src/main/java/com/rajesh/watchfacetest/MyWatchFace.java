@@ -92,14 +92,14 @@ public class MyWatchFace extends CanvasWatchFaceService {
             timePaint = new Paint();
             timePaint.setAntiAlias(true);
             timePaint.setColor(Color.WHITE);
-            timePaint.setStyle(Paint.Style.STROKE);
+            timePaint.setStyle(Paint.Style.FILL_AND_STROKE);
             timePaint.setStrokeWidth(STROKE_TIME);
             timePaint.setTextSize(30);
 
             paintDate = new Paint();
             paintDate.setAntiAlias(true);
             paintDate.setColor(Color.WHITE);
-            paintDate.setStyle(Paint.Style.STROKE);
+            paintDate.setStyle(Paint.Style.FILL_AND_STROKE);
             paintDate.setStrokeWidth(STROKE_WIDTH_DATE);
             paintDate.setTextSize(20);
 
@@ -121,7 +121,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
             messagePaint.setAntiAlias(true);
             messagePaint.setStyle(Paint.Style.FILL);
             messagePaint.setTextSize(10);
-            //messagePaint.setStrokeWidth(STROKE_WIDTH);
 
             messageTextPaint = new Paint();
             messageTextPaint.setColor(Color.BLACK);
@@ -199,17 +198,15 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
 
             drawMessageRect(canvas, width, height);
+
             showDistanceTravelled(canvas, width, height);
 
-
             canvas.drawPath(path, paint);
-
-
-            //path1.addOval();
         }
 
         private void drawMessageRect(Canvas canvas, int width, int height) {
             RectF messageRectF = new RectF();
+
             int messageRectFLeft = getPercentageOfDimension(width, 20);
             int messageRectFTop = height / 2 + getPercentageOfDimension(height, 18);
 
@@ -218,18 +215,23 @@ public class MyWatchFace extends CanvasWatchFaceService {
             canvas.drawRect(messageRectF, messagePaint);
             canvas.drawBitmap(bitmapMessage, messageRectF.centerX() - 15, messageRectFTop, null);
 
-            Log.d(TAG, "drawMessageRect: height :: " + messageRectF.height() + " width :: " + messageRectF.width());
+            drawWeatherRect(canvas, messageRectF, messageRectFLeft);
+        }
 
+        private void drawWeatherRect(Canvas canvas, RectF messageRectF, int messageRectFLeft) {
             String messageCount = "23";
             float messageCountSize = messageTextPaint.measureText(messageCount);
 
             String messageLabel = "Messages";
             float messageLabelWidth = messageTextPaint.measureText(messageLabel);
 
-
             canvas.drawText(messageCount, messageRectF.centerX() - messageCountSize / 2, messageRectF.centerY() + 10, messageTextPaint);
             canvas.drawText(messageLabel, messageRectF.centerX() - messageLabelWidth / 2, messageRectF.centerY() + 20, messageLabelTextPaint);
 
+            currentWeatherRect(canvas, messageRectF, messageRectFLeft, messageLabel);
+        }
+
+        private void currentWeatherRect(Canvas canvas, RectF messageRectF, int messageRectFLeft, String messageLabel) {
             RectF weatherRectF = new RectF();
             weatherRectF.set(messageRectFLeft + 50 + 10, messageRectF.bottom - 10, messageRectFLeft + 50 + 50 + 10, messageRectF.bottom + 40);
             canvas.drawRect(weatherRectF, messagePaint);
@@ -246,13 +248,12 @@ public class MyWatchFace extends CanvasWatchFaceService {
             Log.d(TAG, "drawMessageRect: weather rect width :: " + weatherRectF.width() + "  height::" + weatherRectF.height());
 
             canvas.drawText(weatherTemp, weatherRectF.centerX() - weatherTempLength / 2, weatherRectF.centerY() + 10, messageTextPaint);
-            canvas.drawText(weatherLabel, weatherRectF.centerX() - 19, weatherRectF.centerY() + 20, messageLabelTextPaint);
-
-
+            canvas.drawText(weatherLabel, weatherRectF.centerX() - weatherLabelWidth / 2, weatherRectF.centerY() + 20, messageLabelTextPaint);
         }
 
         private void showDistanceTravelled(Canvas canvas, int width, int height) {
             RectF messageRectF = new RectF();
+
             int messageRectFLeft = width - getPercentageOfDimension(width, 20) - 50;
             int messageRectFTop = height / 2 + getPercentageOfDimension(height, 18);
 
@@ -262,16 +263,18 @@ public class MyWatchFace extends CanvasWatchFaceService {
             canvas.drawBitmap(bitmapMessage, messageRectF.centerX() - 15, messageRectFTop, null);
 
             String messageCount = "23";
-            float messageCountSize = messageTextPaint.measureText(messageCount);
-
             String messageLabel = "Messages";
-            float messageLabelWidth = messageTextPaint.measureText(messageLabel);
 
+            float messageCountSize = messageTextPaint.measureText(messageCount);
+            float messageLabelWidth = messageTextPaint.measureText(messageLabel);
 
             canvas.drawText(messageCount, messageRectF.centerX() - messageCountSize / 2, messageRectF.centerY() + 10, messageTextPaint);
             canvas.drawText(messageLabel, messageRectF.centerX() - messageLabelWidth / 2, messageRectF.centerY() + 20, messageLabelTextPaint);
 
+            distanceMoveRect(canvas, messageRectF, messageRectFLeft);
+        }
 
+        private void distanceMoveRect(Canvas canvas, RectF messageRectF, int messageRectFLeft) {
             RectF planeRect = new RectF();
             planeRect.set(messageRectF.bottom - 10, messageRectF.bottom - 10, messageRectFLeft - 60, messageRectF.bottom + 40);
             canvas.drawRect(planeRect, messagePaint);
@@ -279,22 +282,18 @@ public class MyWatchFace extends CanvasWatchFaceService {
             canvas.drawBitmap(bitmapVisibility, planeRect.centerX() - 15, planeRect.top, null);
 
             String planeString = "20";
-            float planeStringWidth = messageTextPaint.measureText(planeString);
-
             String planeLabel = "KM/h";
+
+            float planeStringWidth = messageTextPaint.measureText(planeString);
             float planeLabelWidth = messageTextPaint.measureText(planeLabel);
 
             canvas.drawText(planeString, planeRect.centerX() - planeStringWidth / 2, planeRect.centerY() + 10, messageTextPaint);
             canvas.drawText(planeLabel, planeRect.centerX() - planeLabelWidth / 2, planeRect.centerY() + 20, messageLabelTextPaint);
-
-
         }
 
 
         private void showDate(Canvas canvas, int width, int height) {
-            //String date = "Thursday,19 Feb 2015";
             float dateSize = paintDate.measureText(currentDate);
-            Log.d(TAG, "onDraw: size of date::" + dateSize + " :: start x :: " + (width / 2 - dateSize / 2) + " :: height ::" + getPercentageOfDimension(height, 70));
             canvas.drawText(currentDate, width / 2 - dateSize / 2, getPercentageOfDimension(height, 80), paintDate);
         }
 
@@ -305,9 +304,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
             String mmString = "" + calendar.get(Calendar.MINUTE);
             float colonWidth = timePaint.measureText(COLON);
-
-            Log.d(TAG, "showTime: current time :: " + hhString + " :: " + mmString);
-
 
             canvas.drawText(hhString, width / 2 - hhWidth - colonWidth / 2 - 10, getPercentageOfDimension(height, 60), timePaint);
             canvas.drawText(mmString, width / 2 + colonWidth / 2 + 10, getPercentageOfDimension(height, 60), timePaint);
