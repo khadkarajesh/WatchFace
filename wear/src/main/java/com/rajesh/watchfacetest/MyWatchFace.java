@@ -41,18 +41,11 @@ public class MyWatchFace extends CanvasWatchFaceService {
     }
 
     private class MyEngine extends CanvasWatchFaceService.Engine {
-        private static final String WATCH_FACE_SHARED_PREFERENCES = "watch_face_pref";
-        private static final String DATE_PREF = "date_pref";
-
         private static final int STROKE_WIDTH = 5;
         private static final int STROKE_TIME = 2;
         private static final int STROKE_WIDTH_DATE = 1;
 
         private static final int COLON_MESSAGE = 1;
-        private static final int COLON_VISIBLE = 2;
-        private static final int COLON_INVISIBLE = 3;
-
-        private boolean dateChange = false;
 
         private static final String COLON = ":";
 
@@ -65,7 +58,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
         private Bitmap bitmapMessage, bitmapVisibility, bitmapWeather;
         private boolean colonVisibility = true;
         private String currentDate = "";
-        private boolean ambinetMode = false, receiverRegister = false;
+        boolean receiverRegister = false;
         private TimeZoneChangeReceiver timeZoneChangeReceiver;
 
         private Date date;
@@ -86,8 +79,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
             handler = new MyHandler();
 
             initFormat();
-            setDateToSharedPref(getApplicationContext());
-
 
             bitmapMessage = Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.ic_message_black_18dp), 30, 30, false);
             bitmapVisibility = Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.ic_visibility_black_18dp), 30, 30, false);
@@ -386,7 +377,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 receiverRegister = false;
                 unRegisterReceiver();
             }
-            ambinetMode = visible;
         }
 
         private void registerReceiver() {
@@ -408,8 +398,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
         @Override
         public void onAmbientModeChanged(boolean inAmbientMode) {
             super.onAmbientModeChanged(inAmbientMode);
-            //Log.d(TAG, "onAmbientModeChanged: ambient mode " + inAmbientMode);
-            ambinetMode = inAmbientMode;
             invalidate();
         }
 
@@ -433,28 +421,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
             }
         }
 
-        private void setDateToSharedPref(Context c) {
-            SharedPreferences sharedPreferences = c.getSharedPreferences(WATCH_FACE_SHARED_PREFERENCES, MODE_PRIVATE);
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putString(DATE_PREF, currentDate);
-            editor.commit();
-        }
-
-        private void checkDateChanged(Context context) {
-            SharedPreferences sharedPreferences = context.getSharedPreferences(WATCH_FACE_SHARED_PREFERENCES, MODE_PRIVATE);
-            sharedPreferences.registerOnSharedPreferenceChangeListener(new SharedPreferences.OnSharedPreferenceChangeListener() {
-                @Override
-                public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-
-                }
-            });
-        }
-
-
-        private String getDatePref(Context context) {
-            SharedPreferences sharedPreferences = context.getSharedPreferences(WATCH_FACE_SHARED_PREFERENCES, MODE_PRIVATE);
-            return sharedPreferences.getString(DATE_PREF, "");
-        }
 
         @Override
         public void onApplyWindowInsets(WindowInsets insets) {
