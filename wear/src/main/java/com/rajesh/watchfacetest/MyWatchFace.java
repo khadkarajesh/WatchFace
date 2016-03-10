@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -15,14 +14,21 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.wearable.Wearable;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -67,7 +73,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
         Calendar calendar;
 
         int width, height;
-
+        private GoogleApiClient googleApiClient;
 
         private MyHandler handler;
         private boolean is24Hour;
@@ -75,6 +81,8 @@ public class MyWatchFace extends CanvasWatchFaceService {
         @Override
         public void onCreate(SurfaceHolder holder) {
             super.onCreate(holder);
+
+            createGoogleApiClient();
 
             timeZoneChangeReceiver = new TimeZoneChangeReceiver();
             handler = new MyHandler();
@@ -148,6 +156,25 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
             backgroundColor = ContextCompat.getColor(getBaseContext(), R.color.colorPrimary);
 
+        }
+
+        private void createGoogleApiClient() {
+            googleApiClient = new GoogleApiClient.Builder(MyWatchFace.this).addApi(Wearable.API).addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
+                @Override
+                public void onConnected(@Nullable Bundle bundle) {
+
+                }
+
+                @Override
+                public void onConnectionSuspended(int i) {
+
+                }
+            }).addOnConnectionFailedListener(new GoogleApiClient.OnConnectionFailedListener() {
+                @Override
+                public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+                }
+            }).build();
         }
 
         private void initFormat() {
@@ -338,10 +365,12 @@ public class MyWatchFace extends CanvasWatchFaceService {
         }
 
         private void showTime(Canvas canvas, int width, int height) {
-
-            String hhString = "" + calendar.get(Calendar.HOUR_OF_DAY);
-
-            hhString = hhString.length() == 1 ? "0" + hhString : hhString;
+            String hhString = is24Hour ? "" + calendar.get(Calendar.HOUR) : "" + calendar.get(Calendar.HOUR_OF_DAY);
+            if (hhString.equals("0")) {
+                hhString = hhString.replace("0", "12");
+            }
+            Log.d(TAG, "showTime: hour " + hhString);
+            //hhString = hhString.length() == 1 ? "0" + hhString : hhString;
             float hhWidth = timePaint.measureText(hhString);
 
             String mmString = "" + calendar.get(Calendar.MINUTE);
