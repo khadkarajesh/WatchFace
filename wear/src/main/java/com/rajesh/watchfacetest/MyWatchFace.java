@@ -41,6 +41,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
     }
 
     private class MyEngine extends CanvasWatchFaceService.Engine {
+        private static final String DATE_FORMAT = "EEEE d MMMM yyyy";
         private static final int STROKE_WIDTH = 5;
         private static final int STROKE_TIME = 2;
         private static final int STROKE_WIDTH_DATE = 1;
@@ -155,7 +156,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
             date = new Date();
             date.setTime(System.currentTimeMillis());
             calendar.setTime(date);
-            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("EEEE d MMMM yyyy");
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat(DATE_FORMAT);
             currentDate = simpleDateFormat.format(date);
         }
 
