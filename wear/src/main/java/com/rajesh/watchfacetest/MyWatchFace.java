@@ -1,6 +1,9 @@
 package com.rajesh.watchfacetest;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -16,12 +19,15 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v4.content.ContextCompat;
 import android.support.wearable.watchface.CanvasWatchFaceService;
+import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.SurfaceHolder;
+import android.view.WindowInsets;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.TimeZone;
 
 
 public class MyWatchFace extends CanvasWatchFaceService {
@@ -59,6 +65,10 @@ public class MyWatchFace extends CanvasWatchFaceService {
         private Bitmap bitmapMessage, bitmapVisibility, bitmapWeather;
         private boolean colonVisibility = true;
         private String currentDate = "";
+        private boolean ambinetMode = false, receiverRegister = false;
+        private TimeZoneChangeReceiver timeZoneChangeReceiver;
+
+        private Date date;
 
         Calendar calendar;
 
@@ -66,15 +76,16 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
 
         private MyHandler handler;
+        private boolean is24Hour;
 
         @Override
         public void onCreate(SurfaceHolder holder) {
             super.onCreate(holder);
 
+            timeZoneChangeReceiver = new TimeZoneChangeReceiver();
             handler = new MyHandler();
-            calendar = Calendar.getInstance();
-            currentDate = formatDate();
 
+            initFormat();
             setDateToSharedPref(getApplicationContext());
 
 
@@ -147,61 +158,98 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
         }
 
+        private void initFormat() {
+            calendar = Calendar.getInstance();
+            calendar.setTimeZone(TimeZone.getDefault());
+            date = new Date();
+            date.setTime(System.currentTimeMillis());
+            calendar.setTime(date);
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("EEEE d MMMM yyyy");
+            currentDate = simpleDateFormat.format(date);
+        }
+
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
             super.onDraw(canvas, bounds);
+            calendar.setTimeInMillis(System.currentTimeMillis());
+            if (isInAmbientMode()) {
+                backgroundColor = ContextCompat.getColor(MyWatchFace.this, R.color.black);
+            }
 
-            canvas.drawColor(Color.WHITE);
-            Path path = new Path();
+            canvas.drawColor(backgroundColor);
 
-            width = bounds.width();
-            height = bounds.height();
-
-
-            pointX = getPercentageOfDimension(width, PERCENTAGE_TO_DRAW_LINE);
-            pointY = height / 2;
-
-            pointX1 = width - getPercentageOfDimension(width, PERCENTAGE_TO_DRAW_LINE);
-            pointY1 = height / 2;
+            if (!isInAmbientMode()) {
+                //setPaintAntialias();
+                Log.d(TAG, "onDraw: not in ambient mode");
+                backgroundColor = ContextCompat.getColor(MyWatchFace.this, R.color.white);
 
 
-            RectF rectFiller = new RectF();
-            rectFiller.set(0, 0, width, height / 2);
-            canvas.drawRect(rectFiller, rectFillerPaint);
+                calendar.setTimeInMillis(System.currentTimeMillis());
+                date.setTime(System.currentTimeMillis());
 
-            path.moveTo(0, height / 2);
-            path.lineTo(pointX, pointY + 2);
-            paint.setStrokeWidth(2);
-            canvas.drawPath(path, paint);
+                is24Hour = DateFormat.is24HourFormat(MyWatchFace.this);
 
-            path.moveTo(width, height / 2);
-            path.lineTo(pointX1, pointY1 + 2);
-            paint.setStrokeWidth(2);
-            canvas.drawPath(path, paint);
+                Path path = new Path();
 
-            paint.setStrokeWidth(STROKE_WIDTH);
-            path.moveTo(pointX - 2.8f, pointY);
-            path.cubicTo(pointX - 2.8f, pointY, width / 2, height / 2 + getPercentageOfDimension(height, 70), pointX1 + 2.8f, pointY1);
-
-            Path path1 = new Path();
-            path1.moveTo(pointX - 2.8f, pointY);
-            path1.cubicTo(pointX - 2.8f, pointY, width / 2, height / 2 + getPercentageOfDimension(height, 68), pointX1 + 2.8f, pointY1);
-            canvas.drawPath(path1, rectFillerPaint);
+                width = bounds.width();
+                height = bounds.height();
 
 
+                pointX = getPercentageOfDimension(width, PERCENTAGE_TO_DRAW_LINE);
+                pointY = height / 2;
+
+                pointX1 = width - getPercentageOfDimension(width, PERCENTAGE_TO_DRAW_LINE);
+                pointY1 = height / 2;
+
+
+                RectF rectFiller = new RectF();
+                rectFiller.set(0, 0, width, height / 2);
+                canvas.drawRect(rectFiller, rectFillerPaint);
+
+                //draw first horizantal line to center  left
+                path.moveTo(0, height / 2);
+                path.lineTo(pointX, pointY + 2);
+                paint.setStrokeWidth(2);
+                canvas.drawPath(path, paint);
+
+                //draw second horizantal line to center right
+                path.moveTo(width, height / 2);
+                path.lineTo(pointX1, pointY1 + 2);
+                paint.setStrokeWidth(2);
+                canvas.drawPath(path, paint);
+
+                paint.setStrokeWidth(STROKE_WIDTH);
+                path.moveTo(pointX - 2.8f, pointY);
+                path.cubicTo(pointX - 2.8f, pointY, width / 2, height / 2 + getPercentageOfDimension(height, 70), pointX1 + 2.8f, pointY1);
+
+                Path path1 = new Path();
+                path1.moveTo(pointX - 2.8f, pointY);
+                path1.cubicTo(pointX - 2.8f, pointY, width / 2, height / 2 + getPercentageOfDimension(height, 68), pointX1 + 2.8f, pointY1);
+                canvas.drawPath(path1, rectFillerPaint);
+
+
+                drawMessageRect(canvas, width, height);
+
+                showDistanceTravelled(canvas, width, height);
+
+                canvas.drawPath(path, paint);
+            }
             showTime(canvas, width, height);
-
-            // if (!getDatePref(getApplicationContext()).equalsIgnoreCase(formatDate())) {
-            setDateToSharedPref(getApplicationContext());
             showDate(canvas, width, height);
-            //}
+        }
 
-
-            drawMessageRect(canvas, width, height);
-
-            showDistanceTravelled(canvas, width, height);
-
-            canvas.drawPath(path, paint);
+        private void setPaintAntialias() {
+            boolean inAmbientMode = !isInAmbientMode();
+            paint.setAntiAlias(inAmbientMode);
+            paintWhite.setAntiAlias(inAmbientMode);
+            paintBlack.setAntiAlias(inAmbientMode);
+            paintDate.setAntiAlias(inAmbientMode);
+            messagePaint.setAntiAlias(inAmbientMode);
+            messageTextPaint.setAntiAlias(inAmbientMode);
+            messageLabelTextPaint.setAntiAlias(inAmbientMode);
+            weatherImageIconPaint.setAntiAlias(inAmbientMode);
+            rectFillerPaint.setAntiAlias(inAmbientMode);
+            timePaint.setAntiAlias(inAmbientMode);
         }
 
         private void drawMessageRect(Canvas canvas, int width, int height) {
@@ -245,7 +293,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
             String weatherLabel = "Sunny";
             float weatherLabelWidth = messageLabelTextPaint.measureText(messageLabel);
 
-            Log.d(TAG, "drawMessageRect: weather rect width :: " + weatherRectF.width() + "  height::" + weatherRectF.height());
+            // Log.d(TAG, "drawMessageRect: weather rect width :: " + weatherRectF.width() + "  height::" + weatherRectF.height());
 
             canvas.drawText(weatherTemp, weatherRectF.centerX() - weatherTempLength / 2, weatherRectF.centerY() + 10, messageTextPaint);
             canvas.drawText(weatherLabel, weatherRectF.centerX() - weatherLabelWidth / 2, weatherRectF.centerY() + 20, messageLabelTextPaint);
@@ -300,9 +348,12 @@ public class MyWatchFace extends CanvasWatchFaceService {
         private void showTime(Canvas canvas, int width, int height) {
 
             String hhString = "" + calendar.get(Calendar.HOUR_OF_DAY);
+
+            hhString = hhString.length() == 1 ? "0" + hhString : hhString;
             float hhWidth = timePaint.measureText(hhString);
 
             String mmString = "" + calendar.get(Calendar.MINUTE);
+            mmString = mmString.length() == 1 ? "0" + mmString : mmString;
             float colonWidth = timePaint.measureText(COLON);
 
             canvas.drawText(hhString, width / 2 - hhWidth - colonWidth / 2 - 10, getPercentageOfDimension(height, 60), timePaint);
@@ -310,7 +361,13 @@ public class MyWatchFace extends CanvasWatchFaceService {
             if (colonVisibility) {
                 canvas.drawText(COLON, width / 2 - colonWidth / 2, getPercentageOfDimension(height, 60), timePaint);
             }
-            handler.sendEmptyMessageDelayed(COLON_MESSAGE, 500);
+            if (!isInAmbientMode()) {
+                handler.sendEmptyMessageDelayed(COLON_MESSAGE, 500);
+            } else {
+                handler.removeMessages(COLON_MESSAGE);
+                colonVisibility = true;
+                invalidate();
+            }
         }
 
 
@@ -321,12 +378,46 @@ public class MyWatchFace extends CanvasWatchFaceService {
         @Override
         public void onVisibilityChanged(boolean visible) {
             super.onVisibilityChanged(visible);
-            Log.d(TAG, "onVisibilityChanged: called :: " + visible);
+            //Log.d(TAG, "onVisibilityChanged: called :: " + visible);
+            if (visible) {
+                receiverRegister = true;
+                registerReceiver();
+            } else {
+                receiverRegister = false;
+                unRegisterReceiver();
+            }
+            ambinetMode = visible;
+        }
+
+        private void registerReceiver() {
+            if (receiverRegister) {
+                return;
+            }
+            IntentFilter intentFilter = new IntentFilter(Intent.ACTION_TIMEZONE_CHANGED);
+            intentFilter.addAction(Intent.ACTION_LOCALE_CHANGED);
+            MyWatchFace.this.registerReceiver(timeZoneChangeReceiver, intentFilter);
+        }
+
+        private void unRegisterReceiver() {
+            if (!receiverRegister) {
+                return;
+            }
+            MyWatchFace.this.unregisterReceiver(timeZoneChangeReceiver);
+        }
+
+        @Override
+        public void onAmbientModeChanged(boolean inAmbientMode) {
+            super.onAmbientModeChanged(inAmbientMode);
+            //Log.d(TAG, "onAmbientModeChanged: ambient mode " + inAmbientMode);
+            ambinetMode = inAmbientMode;
+            invalidate();
         }
 
         @Override
         public void onTimeTick() {
             super.onTimeTick();
+            invalidate();
+            Log.d(TAG, "onTimeTick:");
             //called in every minute when it is in ambient mode/intreactive mode
         }
 
@@ -359,16 +450,32 @@ public class MyWatchFace extends CanvasWatchFaceService {
             });
         }
 
-        private String formatDate() {
-            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("EEEE d MMMM yyyy");
-            Date date = new Date(System.currentTimeMillis());
-            currentDate = simpleDateFormat.format(date);
-            return currentDate;
-        }
 
         private String getDatePref(Context context) {
             SharedPreferences sharedPreferences = context.getSharedPreferences(WATCH_FACE_SHARED_PREFERENCES, MODE_PRIVATE);
             return sharedPreferences.getString(DATE_PREF, "");
         }
+
+        @Override
+        public void onApplyWindowInsets(WindowInsets insets) {
+            super.onApplyWindowInsets(insets);
+            if (insets.isRound()) {
+                //Log.d(TAG, "onApplyWindowInsets: round");
+            } else {
+                //Log.d(TAG, "onApplyWindowInsets: square");
+            }
+        }
+
+        public class TimeZoneChangeReceiver extends BroadcastReceiver {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                initFormat();
+                invalidate();
+                //Log.d(TAG, "onReceive: called ::" + calendar.getTimeZone());
+            }
+        }
+
+
     }
+
 }
